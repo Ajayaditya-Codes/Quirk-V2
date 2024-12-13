@@ -1,0 +1,1 @@
+ALTER TABLE "Workflows" ADD COLUMN "Public" boolean DEFAULT false NOT NULL;

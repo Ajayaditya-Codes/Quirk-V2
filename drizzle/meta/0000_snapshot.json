@@ -1,0 +1,174 @@
+{
+  "id": "0ba5082b-25d5-4535-b1c7-3e117dd7f99e",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.Logs": {
+      "name": "Logs",
+      "schema": "",
+      "columns": {
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "LogMessage": {
+          "name": "LogMessage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "WorkflowName": {
+          "name": "WorkflowName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "Success": {
+          "name": "Success",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Users": {
+      "name": "Users",
+      "schema": "",
+      "columns": {
+        "KindeID": {
+          "name": "KindeID",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "Username": {
+          "name": "Username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "Email": {
+          "name": "Email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "Credits": {
+          "name": "Credits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "SlackAccessToken": {
+          "name": "SlackAccessToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "AsanaRefreshToken": {
+          "name": "AsanaRefreshToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "Workflows": {
+          "name": "Workflows",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Users_Email_unique": {
+          "name": "Users_Email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "Email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Workflows": {
+      "name": "Workflows",
+      "schema": "",
+      "columns": {
+        "WorkflowName": {
+          "name": "WorkflowName",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "GitHubNode": {
+          "name": "GitHubNode",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "Nodes": {
+          "name": "Nodes",
+          "type": "jsonb[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::jsonb[]"
+        },
+        "Edges": {
+          "name": "Edges",
+          "type": "jsonb[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::jsonb[]"
+        },
+        "Published": {
+          "name": "Published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "HookID": {
+          "name": "HookID",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -9,12 +9,13 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const Users = pgTable("Users", {
-  ClerkID: text("KindeID").primaryKey(),
+  KindeID: text("KindeID").primaryKey(),
   Username: text("Username").notNull(),
   Email: text("Email").notNull().unique(),
   Credits: integer("Credits").notNull(),
   SlackAccessToken: text("SlackAccessToken"),
   AsanaRefreshToken: text("AsanaRefreshToken"),
+  GitHubAccessToken: text("GitHubAccessToken"),
   Workflows: text("Workflows")
     .array()
     .notNull()
@@ -23,6 +24,7 @@ export const Users = pgTable("Users", {
 
 export const Workflows = pgTable("Workflows", {
   WorkflowName: text("WorkflowName").primaryKey(),
+  PublicName: text("PublicName").notNull(),
   GitHubNode: jsonb("GitHubNode")
     .notNull()
     .default(sql`'{}'::jsonb`),
@@ -35,6 +37,7 @@ export const Workflows = pgTable("Workflows", {
     .notNull()
     .default(sql`ARRAY[]::jsonb[]`),
   Published: boolean("Published").notNull().default(false),
+  Public: boolean("Public").notNull().default(false),
   HookID: text("HookID"),
 });
 

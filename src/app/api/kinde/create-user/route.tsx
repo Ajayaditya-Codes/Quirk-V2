@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import jwksClient from "jwks-rsa";
 import jwt from "jsonwebtoken";
+import { db } from "@/db/drizzle";
+import { Users } from "@/db/schema";
 
 const client = jwksClient({
   jwksUri: `${process.env.KINDE_ISSUER_URL}/.well-known/jwks.json`,
@@ -22,11 +24,23 @@ export async function POST(req: Request) {
     const event = await jwt.verify(token, signingKey);
 
     switch ((event as jwt.JwtPayload)?.type) {
-      case "user.updated":
-        console.log((event as jwt.JwtPayload)?.data);
-        break;
       case "user.created":
-        console.log((event as jwt.JwtPayload)?.data);
+        const user = (event as jwt.JwtPayload)?.data?.user;
+        try {
+          await db
+            .insert(Users)
+            .values({
+              KindeID: user.id,
+              Username: user.first_name,
+              Email: user.email,
+              Credits: 20,
+            })
+            .execute();
+        } catch (error: any) {
+          console.error(error);
+          return NextResponse.json({ message: error }, { status: 400 });
+        }
+
         break;
       default:
         break;

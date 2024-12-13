@@ -39,7 +39,7 @@ export async function AppSidebar() {
           src="/logo.svg"
           width={50}
           height={50}
-          className="bg-black rounded-xl"
+          className="bg-white dark:bg-neutral-800 rounded-xl"
         />
         <div className="flex flex-col justify-center items-start">
           <h3 className="font-semibold text-xl tracking-tighter leading-snug">
@@ -141,8 +141,8 @@ export async function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="m-3 bg-white rounded-xl p-3 flex flex-row justify-start items-start">
-        {user.picture ? (
+      <SidebarFooter className="m-3 bg-white dark:bg-neutral-800 rounded-xl p-3 flex flex-row justify-start items-start">
+        {user?.picture ? (
           <Image
             alt="Logo"
             src={user.picture}
@@ -155,7 +155,7 @@ export async function AppSidebar() {
         )}
         <div className="flex flex-col justify-start items-start">
           <h3 className="font-semibold text-lg tracking-tighter leading-snug">
-            {user.given_name}
+            {user?.given_name}
           </h3>
           <small className="leading-snug font-medium">
             You are using Free Plan of Quirk. You are left with {20} Free
