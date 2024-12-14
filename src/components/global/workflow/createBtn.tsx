@@ -1,13 +1,10 @@
 "use client";
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { generate } from "random-words";
-import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
-export default function WorkflowButton() {
-  const { toast } = useToast();
+export default function CreateBtn() {
   const router = useRouter();
 
   const handler = async () => {
@@ -19,33 +16,17 @@ export default function WorkflowButton() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          newWorkflowName: workflowName,
+          workflowName,
         }),
       });
-      const result = await response.json();
 
       if (response.ok) {
-        toast({ title: "Workflow Added Successfully" });
+        console.log("success");
         router.refresh();
-      } else if (result.error === "Maximum number of workflows reached") {
-        toast({
-          title: "Workflow Limit Reached. ",
-          description: "You can only have 3 Workflows in Hobby Plan.",
-          variant: "destructive",
-        });
       } else {
-        toast({
-          title: "There was some Error. Try Again Later!",
-          variant: "destructive",
-        });
+        console.log("failiure");
       }
-    } catch (error) {
-      console.error("Failed to add workflow:", error);
-      toast({
-        title: "There was some Error. Try Again Later!",
-        variant: "destructive",
-      });
-    }
+    } catch (error) {}
   };
 
   const join = (strings: string[] | string) => {

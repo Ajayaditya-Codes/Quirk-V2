@@ -1,4 +1,8 @@
-export default function DuplicateWorkflow({ workflow }: { workflow: String }) {
+export default function DuplicateBtn({
+  workflowName,
+}: {
+  workflowName: String;
+}) {
   const handler = async () => {
     return null;
   };

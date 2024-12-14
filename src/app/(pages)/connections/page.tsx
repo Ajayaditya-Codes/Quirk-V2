@@ -21,9 +21,7 @@ export default async function Connections() {
       (await db.select().from(Users).where(eq(Users.KindeID, id)).execute());
 
     userDetails = result && result.length > 0 ? result[0] : null;
-  } catch (error) {
-    console.error("Error fetching user details:", error);
-  }
+  } catch (error) {}
 
   return (
     <div className="w-full flex flex-col">

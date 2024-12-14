@@ -15,13 +15,13 @@ type Props = {
   connectionLink?: string;
 };
 
-const ConnectionCard = async ({
+export default async function ConnectionCard({
   description,
   icon,
   title,
   connected,
   connectionLink,
-}: Props) => {
+}: Props) {
   return (
     <Card className="flex w-full items-end bg-transparent justify-between border shadow-lg">
       <CardHeader className="flex flex-col gap-4">
@@ -50,6 +50,4 @@ const ConnectionCard = async ({
       </div>
     </Card>
   );
-};
-
-export default ConnectionCard;
+}

@@ -39,9 +39,7 @@ export default async function Page() {
           .execute();
       }
     }
-  } catch (error) {
-    console.error("Error fetching logs:", error);
-  }
+  } catch (error) {}
 
   return (
     <div className="w-full flex flex-col">

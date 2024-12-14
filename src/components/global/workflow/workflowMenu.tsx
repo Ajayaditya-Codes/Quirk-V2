@@ -1,19 +1,23 @@
 "use client";
 import Link from "next/link";
+
 import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "../ui/sidebar";
+} from "../../ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { MoreHorizontal } from "lucide-react";
-import DeleteWorkflow from "./deleteWorkflow";
-import DuplicateWorkflow from "./duplicateWorkflow";
+
+import DeleteBtn from "./deleteBtn";
+import DuplicateBtn from "./duplicateBtn";
+import DeactivateBtn from "./deactivateBtn";
 
 export default function WorkflowMenu({ workflow }: { workflow: String }) {
   return (
@@ -31,13 +35,13 @@ export default function WorkflowMenu({ workflow }: { workflow: String }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start">
           <DropdownMenuItem>
-            <span>Duplicate Project</span>
+            <DeactivateBtn workflowName={workflow} />
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <DuplicateWorkflow workflow={workflow} />
+            <DuplicateBtn workflowName={workflow} />
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <DeleteWorkflow workflow={workflow} />
+            <DeleteBtn workflowName={workflow} />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

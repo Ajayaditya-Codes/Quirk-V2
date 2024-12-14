@@ -8,7 +8,7 @@ export default function Header({ route }: { route: string }) {
       <div className="flex flex-row space-x-1 items-center">
         <SidebarTrigger className="mr-2" />
         <span>Quirk</span>
-        <ChevronRight size={18} />
+        <ChevronRight size={15} />
         <span>{route}</span>
       </div>
       <ThemeSelector />
