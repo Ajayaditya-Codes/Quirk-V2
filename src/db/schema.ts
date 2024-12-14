@@ -24,7 +24,7 @@ export const Users = pgTable("Users", {
 
 export const Workflows = pgTable("Workflows", {
   WorkflowName: text("WorkflowName").primaryKey(),
-  PublicName: text("PublicName").notNull(),
+  PublicName: text("PublicName"),
   GitHubNode: jsonb("GitHubNode")
     .notNull()
     .default(sql`'{}'::jsonb`),
