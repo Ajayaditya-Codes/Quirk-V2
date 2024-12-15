@@ -10,23 +10,33 @@ const client = jwksClient({
 
 export async function POST(req: Request) {
   try {
+    // Read the incoming JWT token
     const token = await req.text();
 
+    // Decode the token and validate its structure
     const decodedToken = jwt.decode(token, { complete: true });
-    if (!decodedToken) {
-      throw new Error("Invalid token");
+    if (!decodedToken || !decodedToken.header || !decodedToken.payload) {
+      throw new Error("Invalid token structure");
     }
+
     const { header } = decodedToken as jwt.Jwt;
     const { kid } = header;
 
+    // Get the signing key from JWKS
     const key = await client.getSigningKey(kid);
     const signingKey = key.getPublicKey();
-    const event = await jwt.verify(token, signingKey);
 
-    switch ((event as jwt.JwtPayload)?.type) {
-      case "user.created":
-        const user = (event as jwt.JwtPayload)?.data?.user;
+    // Verify the token with the signing key
+    const event = jwt.verify(token, signingKey);
+
+    // Ensure the event type is 'user.created'
+    if ((event as jwt.JwtPayload)?.type === "user.created") {
+      const user = (event as jwt.JwtPayload)?.data?.user;
+
+      // Ensure the user object exists
+      if (user && user.id && user.first_name && user.email) {
         try {
+          // Insert the user into the database
           await db
             .insert(Users)
             .values({
@@ -37,19 +47,26 @@ export async function POST(req: Request) {
             })
             .execute();
         } catch (error: any) {
-          console.error(error);
-          return NextResponse.json({ message: error }, { status: 400 });
+          console.error("Error inserting user:", error);
+          return NextResponse.json(
+            { message: "Failed to insert user into the database", error: error.message },
+            { status: 500 }
+          );
         }
+      } else {
+        throw new Error("Invalid user data in the event payload");
+      }
+    }
 
-        break;
-      default:
-        break;
-    }
   } catch (err) {
-    if (err instanceof Error) {
-      console.error(err.message);
-      return NextResponse.json({ message: err.message }, { status: 400 });
-    }
+    // Catch and log any error during the process
+    console.error("Error processing request:", err);
+    return NextResponse.json(
+      { message: "Error processing the request", error: err instanceof Error ? err.message : "Unknown error" },
+      { status: 400 }
+    );
   }
+
+  // Return success response
   return NextResponse.json({ status: 200, statusText: "success" });
 }

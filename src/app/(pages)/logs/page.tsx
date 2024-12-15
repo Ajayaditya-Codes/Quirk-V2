@@ -15,116 +15,153 @@ import { eq, inArray } from "drizzle-orm";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import Header from "@/components/global/header";
 import { Skeleton } from "@/components/ui/skeleton";
+import Head from "next/head";
 
-const get = async () => {
+// Define Types for Logs and Users
+type Log = {
+  createdAt: Date; 
+  LogMessage: string; 
+  WorkflowName: string; 
+  Success: boolean | null
+};
+
+type User = {
+  KindeID: string;
+  Workflows: string[];
+};
+
+// Function to fetch logs from the database
+const fetchLogs = async (): Promise<Log[] | null> => {
   const { getUser } = getKindeServerSession();
   const { id } = await getUser();
 
-  let logs = null;
+  if (!id) return null;
+
   try {
-    const user =
-      id &&
-      (await db.select().from(Users).where(eq(Users.KindeID, id)).execute());
-    logs =
-      user &&
-      (await db
+    const user: User[] =
+      await db.select().from(Users).where(eq(Users.KindeID, id)).execute();
+
+    if (user.length === 0) return null;
+
+    const logs: Log[] =
+      await db
         .select()
         .from(Logs)
         .where(inArray(Logs.WorkflowName, user[0].Workflows))
-        .execute());
-    if (logs && logs.length > 30) {
-      for (const log of logs) {
+        .execute();
+
+    // Clean up logs if more than 30 entries exist
+    if (logs.length > 30) {
+      const excessLogs = logs.slice(30);
+      for (const log of excessLogs) {
         await db
           .delete(Logs)
           .where(eq(Logs.createdAt, log.createdAt))
           .execute();
       }
     }
+
     return logs;
   } catch (error) {
+    console.error("Error fetching logs:", error);
     return null;
   }
 };
 
-const Body = async () => {
-  const logs = await get();
-  return (
-    <TableBody>
-      {logs &&
-        logs.reverse().map((log, idx) => {
-          return (
-            <TableRow className="hover:bg-transparent font-medium" key={idx}>
-              <TableCell>{log.createdAt.toTimeString()}</TableCell>
+// Skeleton Loader for the Table
+const TableSkeleton: React.FC = () => (
+  <div className="w-full p-[3vh]">
+    <Table className="text-base">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="xl:w-[20vw]">Timestamp</TableHead>
+          <TableHead className="xl:w-[15vw]">Workflow</TableHead>
+          <TableHead>Message</TableHead>
+          <TableHead className="text-right">Success</TableHead>
+        </TableRow>
+      </TableHeader>
+    </Table>
+    <div className="my-2 space-y-2">
+      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-lg" />
+    </div>
+  </div>
+);
+
+// Table Body Component
+const TableContent: React.FC<{ logs: Log[] | null }> = ({ logs }) => (
+  <TableBody>
+    {logs
+      ? logs
+          .reverse()
+          .map((log, idx) => (
+            <TableRow key={idx} className="hover:bg-transparent font-medium">
+              <TableCell>{log.createdAt.toLocaleTimeString()}</TableCell>
               <TableCell>{log.WorkflowName}</TableCell>
               <TableCell>{log.LogMessage}</TableCell>
-              {log.Success ? (
-                <TableCell className="flex justify-end">
-                  <div className="flex flex-row  w-fit h-fit items-center space-x-2 rounded-xl p-1 px-2 ">
+              <TableCell className="flex justify-end">
+                {log.Success ? (
+                  <div className="flex items-center space-x-2 rounded-xl p-1 px-2">
                     <IconCircleCheck className="text-green-500" />
                     <p>Succeeded</p>
                   </div>
-                </TableCell>
-              ) : (
-                <TableCell className="flex justify-end">
-                  <div className="flex flex-row  w-fit h-fit items-center space-x-2 rounded-xl p-1 px-2">
+                ) : (
+                  <div className="flex items-center space-x-2 rounded-xl p-1 px-2">
                     <IconExclamationCircle className="text-red-500" />
                     <p>Failed</p>
                   </div>
-                </TableCell>
-              )}
+                )}
+              </TableCell>
             </TableRow>
-          );
-        })}
-    </TableBody>
+          ))
+      : (
+        <TableRow>
+          <TableCell colSpan={4} className="text-center text-gray-500">
+            No logs available.
+          </TableCell>
+        </TableRow>
+      )}
+  </TableBody>
+);
+
+// Main Page Component
+const Page: React.FC = async () => {
+  const logs = await fetchLogs();
+
+  return (
+    <>
+      {/* SEO Optimizations */}
+      <Head>
+        <title>Workflow Logs | My App</title>
+        <meta
+          name="description"
+          content="View detailed logs for workflow activities, including timestamps, messages, and success indicators."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="robots" content="index, follow" />
+      </Head>
+      <Suspense fallback={<TableSkeleton />}>
+        <div className="w-full flex flex-col">
+          <Header route="Logs" />
+          <div className="w-full p-[3vh]">
+            <Table className="text-base">
+              <TableCaption>Workflow Activity Logs</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="xl:w-[20vw]">Timestamp</TableHead>
+                  <TableHead className="xl:w-[15vw]">Workflow</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead className="text-right">Success</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableContent logs={logs} />
+            </Table>
+          </div>
+        </div>
+      </Suspense>
+    </>
   );
 };
 
-const TablerSkeleton = () => {
-  return (
-    <div className="w-full flex flex-col">
-      <Header route="Logs" />
-      <div className="w-full p-[3vh]">
-        <Table className="text-base">
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="xl:w-[20vw]">Timestamp</TableHead>
-              <TableHead className="xl:w-[15vw]">Workflow</TableHead>
-              <TableHead>Message</TableHead>
-              <TableHead className="text-right">Success</TableHead>
-            </TableRow>{" "}
-          </TableHeader>
-        </Table>
-        <div className="my-2 space-y-2 flex flex-col">
-          <Skeleton className="h-10  w-full rounded-lg" />
-          <Skeleton className="h-10  w-full rounded-lg" />
-          <Skeleton className="h-10  w-full rounded-lg" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-export default async function Page() {
-  return (
-    <Suspense fallback={<TablerSkeleton />}>
-      <div className="w-full flex flex-col">
-        <Header route="Logs" />
-        <div className="w-full p-[3vh]">
-          <Table className="text-base">
-            <TableCaption>Workflow Activity Logs</TableCaption>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="xl:w-[20vw]">Timestamp</TableHead>
-                <TableHead className="xl:w-[15vw]">Workflow</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead className="text-right">Success</TableHead>
-              </TableRow>
-            </TableHeader>
-            <Body />
-          </Table>
-        </div>
-      </div>
-    </Suspense>
-  );
-}
+export default Page;

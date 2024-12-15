@@ -13,6 +13,7 @@ type Props = {
   description: string;
   connected: boolean;
   connectionLink?: string;
+  disconnectionLink?: string;
 };
 
 export default async function ConnectionCard({
@@ -21,6 +22,7 @@ export default async function ConnectionCard({
   title,
   connected,
   connectionLink,
+  disconnectionLink
 }: Props) {
   return (
     <Card className="flex w-full items-end bg-transparent justify-between border shadow-lg">
@@ -33,12 +35,12 @@ export default async function ConnectionCard({
       </CardHeader>
       <div className="flex flex-row gap-2 space-x-3 p-4 ">
         {connected ? (
-          <button
-            disabled={true}
-            className="rounded-lg p-2 border  text-neutral-400 font-bold "
+          <Link
+          href={disconnectionLink ? disconnectionLink : "#"}
+          className="rounded-lg p-2 border border-red-600 font-bold "
           >
-            Connected
-          </button>
+          Disconnect
+        </Link>
         ) : (
           <Link
             href={connectionLink ? connectionLink : "#"}

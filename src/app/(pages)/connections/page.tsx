@@ -11,64 +11,96 @@ import {
 } from "@tabler/icons-react";
 import { eq } from "drizzle-orm";
 import { Suspense } from "react";
+import Head from "next/head";
 
-const getUserDetails = async () => {
+// Define the user type for TypeScript
+type User = {
+  KindeID: string;
+  GitHubAccessToken: string | null;
+  SlackAccessToken: string | null;
+  AsanaRefreshToken: string | null;
+};
+
+// Async function to fetch user details
+const getUserDetails = async (): Promise<User | null> => {
   const { getUser } = getKindeServerSession();
-  const { id } = await getUser();
+  const userSession = await getUser();
+
+  if (!userSession?.id) {
+    return null;
+  }
 
   try {
-    const result =
-      id &&
-      (await db.select().from(Users).where(eq(Users.KindeID, id)).execute());
+    const result = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.KindeID, userSession.id))
+      .execute();
 
-    return result && result.length > 0 ? result[0] : null;
+    return result && result.length > 0 ? (result[0] as User) : null;
   } catch (error) {
     console.error("Error fetching user details:", error);
     return null;
   }
 };
 
-const CardSkeleton = () => {
-  return <Skeleton className="w-full h-32 rounded-xl" />;
-};
+// Skeleton loader for the connection cards
+const CardSkeleton = () => (
+  <Skeleton className="w-full h-32 rounded-xl" />
+);
 
+// Content component for rendering connection cards
 const ConnectionsContent = async () => {
   const userDetails = await getUserDetails();
 
+  if (!userDetails) {
+    return <p className="text-center text-gray-500">No user details available.</p>;
+  }
+
   return (
     <>
-      {userDetails && (
-        <>
-          <ConnectionCard
-            title="GitHub"
-            description="Connect your GitHub account"
-            icon={<IconBrandGithub className="h-5 w-5 " />}
-            connectionLink={process.env.GITHUB_AUTH_URL}
-            connected={userDetails?.GitHubAccessToken !== null}
-          />
-          <ConnectionCard
-            title="Slack"
-            description="Connect your Slack account"
-            icon={<IconBrandSlack className="h-5 w-5 " />}
-            connected={userDetails?.SlackAccessToken !== null}
-            connectionLink={process.env.SLACK_AUTH_URL}
-          />
-          <ConnectionCard
-            title="Asana"
-            description="Connect your Asana account"
-            icon={<IconBrandAsana className="h-5 w-5 " />}
-            connected={userDetails?.AsanaRefreshToken !== null}
-            connectionLink={process.env.ASANA_AUTH_URL}
-          />
-        </>
-      )}
+      <ConnectionCard
+        title="GitHub"
+        description="Connect your GitHub account"
+        icon={<IconBrandGithub className="h-5 w-5" />}
+        connectionLink={process.env.NEXT_PUBLIC_GITHUB_AUTH_URL || "#"}
+        disconnectionLink="/api/github/disconnect"
+        connected={!!userDetails.GitHubAccessToken}
+      />
+      <ConnectionCard
+        title="Slack"
+        description="Connect your Slack account"
+        icon={<IconBrandSlack className="h-5 w-5"  />}
+        connectionLink={process.env.NEXT_PUBLIC_SLACK_AUTH_URL || "#"}
+        disconnectionLink="/api/slack/disconnect"
+        connected={!!userDetails.SlackAccessToken}
+      />
+      <ConnectionCard
+        title="Asana"
+        description="Connect your Asana account"
+        icon={<IconBrandAsana className="h-5 w-5" />}
+        connectionLink={process.env.NEXT_PUBLIC_ASANA_AUTH_URL || "#"}
+        disconnectionLink="/api/asana/disconnect"
+        connected={!!userDetails.AsanaRefreshToken}
+      />
     </>
   );
 };
 
+// Main connections page
 export default function Connections() {
   return (
     <div className="w-full flex flex-col">
+      {/* SEO metadata */}
+      <Head>
+        <title>Connections | Quirk</title>
+        <meta
+          name="description"
+          content="Manage and connect your accounts including GitHub, Slack, and Asana."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      {/* Page content */}
       <Header route="Connections" />
       <div className="w-full p-[3vh]">
         <h1 className="text-2xl font-semibold">Connections</h1>
@@ -82,6 +114,7 @@ export default function Connections() {
               </>
             }
           >
+            {/* Render connection content */}
             <ConnectionsContent />
           </Suspense>
         </div>

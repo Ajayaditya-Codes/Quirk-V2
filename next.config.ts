@@ -6,7 +6,12 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["avatars.githubusercontent.com"],
   },
+  experimental: {
+    optimizePackageImports: ["@chakra-ui/react"],
+  },
 };
+
+
 
 export default withSentryConfig(nextConfig, {
   // For all available options, see:

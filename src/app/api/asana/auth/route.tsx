@@ -4,6 +4,12 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  error?: string;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
@@ -20,7 +26,15 @@ export async function GET(req: NextRequest) {
   const clientSecret = process.env.ASANA_CLIENT_SECRET;
   const redirectUri = process.env.ASANA_REDIRECT_URI;
 
+  if (!clientId || !clientSecret || !redirectUri) {
+    return NextResponse.json(
+      { error: "Missing environment variables" },
+      { status: 500 }
+    );
+  }
+
   try {
+    // Request for the access token
     const response = await fetch(tokenUrl, {
       method: "POST",
       headers: {
@@ -28,24 +42,26 @@ export async function GET(req: NextRequest) {
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: clientId as string,
-        client_secret: clientSecret as string,
-        redirect_uri: redirectUri as string,
-        code: code as string,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        code,
       }),
     });
 
-    const data = await response.json();
+    const data: TokenResponse = await response.json();
 
-    if (!data.access_token) {
+    if (response.status !== 200 || !data.access_token) {
       return NextResponse.json(
-        { error: "Failed to retrieve access token" },
+        { error: data.error || "Failed to retrieve access token" },
         { status: 400 }
       );
     }
 
+    // Update the user's Asana access token
     await updateAsanaAccessToken(data.refresh_token);
 
+    // Redirect the user after successful token exchange
     return NextResponse.redirect("https://localhost:3000/connections");
   } catch (error) {
     console.error("Error during token exchange:", error);
@@ -56,19 +72,22 @@ export async function GET(req: NextRequest) {
   }
 }
 
-async function updateAsanaAccessToken(asanaAccessToken: string) {
+async function updateAsanaAccessToken(asanaRefreshToken: string): Promise<void> {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
   const userId = user?.id;
+
+  if (!userId) {
+    throw new Error("User ID is missing");
+  }
+
   try {
-    userId &&
-      (await db
-        .update(Users)
-        .set({
-          AsanaRefreshToken: asanaAccessToken,
-        })
-        .where(eq(Users.KindeID, userId))
-        .execute());
+    // Update the Asana refresh token in the database
+    await db
+      .update(Users)
+      .set({ AsanaRefreshToken: asanaRefreshToken })
+      .where(eq(Users.KindeID, userId))
+      .execute();
   } catch (error) {
     console.error("Error updating Asana access token:", error);
     throw new Error("Failed to update Asana access token");

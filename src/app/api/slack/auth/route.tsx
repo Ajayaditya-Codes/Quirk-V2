@@ -20,6 +20,13 @@ export async function GET(req: NextRequest) {
   const client_secret = process.env.SLACK_CLIENT_SECRET;
   const redirect_uri = process.env.SLACK_REDIRECT_URI;
 
+  if (!client_id || !client_secret || !redirect_uri) {
+    return NextResponse.json(
+      { error: "Slack credentials are missing in environment variables" },
+      { status: 500 }
+    );
+  }
+
   try {
     const response = await fetch(slackOAuthURL, {
       method: "POST",
@@ -37,15 +44,18 @@ export async function GET(req: NextRequest) {
     const data = await response.json();
 
     if (!data.ok) {
-      return NextResponse.json({ error: data.error }, { status: 400 });
+      console.error("Slack OAuth Error:", data.error);
+      return NextResponse.json({ error: `Slack OAuth Error: ${data.error}` }, { status: 400 });
     }
 
     await updateSlackAccessToken(data.authed_user.access_token);
 
+    // Redirect to the connections page after successful token update
     return NextResponse.redirect("https://localhost:3000/connections");
   } catch (error) {
+    console.error("Error fetching Slack access token:", error);
     return NextResponse.json(
-      { error: "Failed to fetch access token" },
+      { error: "Failed to fetch access token from Slack" },
       { status: 500 }
     );
   }
@@ -54,18 +64,24 @@ export async function GET(req: NextRequest) {
 async function updateSlackAccessToken(slackAccessToken: string) {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
-  const userId = user?.id;
+  
+  if (!user || !user.id) {
+    throw new Error("User session not found");
+  }
+
+  const userId = user.id;
+
   try {
-    userId &&
-      (await db
-        .update(Users)
-        .set({
-          SlackAccessToken: slackAccessToken,
-        })
-        .where(eq(Users.KindeID, userId))
-        .execute());
+    // Update the user's Slack access token in the database
+    await db
+      .update(Users)
+      .set({
+        SlackAccessToken: slackAccessToken,
+      })
+      .where(eq(Users.KindeID, userId))
+      .execute();
   } catch (error) {
     console.error("Error updating Slack access token:", error);
-    throw new Error("Failed to update Slack access token");
+    throw new Error("Failed to update Slack access token in the database");
   }
 }
