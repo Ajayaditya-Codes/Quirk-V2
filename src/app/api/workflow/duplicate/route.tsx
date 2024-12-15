@@ -1,11 +1,13 @@
 import { db } from "@/db/drizzle";
 import { Logs, Users, Workflows } from "@/db/schema";
-import { auth } from "@clerk/nextjs/server";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { getUser } = getKindeServerSession();
+  const { id } = await getUser();
+
   const { workflow, newWorkflow } = await req.json();
 
   if (!workflow || !newWorkflow) {
@@ -14,16 +16,18 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (!userId) {
+
+  if (!id) {
     return NextResponse.json(
       { error: "User not authenticated" },
       { status: 401 }
     );
   }
+
   const user = await db
     .select()
     .from(Users)
-    .where(eq(Users.ClerkID, userId))
+    .where(eq(Users.KindeID, id))
     .execute();
 
   if (user.length === 0) {
@@ -38,14 +42,10 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  const updatedWorkflows = [...currentWorkflows, newWorkflow];
-  if (updatedWorkflows.length > 3) {
-    await db.insert(Logs).values({
-      LogMessage: `Failed to create Workflow ${newWorkflow} due to Workflow limit`,
-      WorkflowName: newWorkflow,
-      Success: false,
-    });
 
+  const updatedWorkflows = [...currentWorkflows, newWorkflow];
+
+  if (updatedWorkflows.length > 3) {
     return NextResponse.json(
       { error: "Maximum number of workflows reached" },
       { status: 400 }
@@ -66,48 +66,31 @@ export async function POST(req: NextRequest) {
     await db
       .update(Users)
       .set({ Workflows: updatedWorkflows })
-      .where(eq(Users.ClerkID, userId))
+      .where(eq(Users.KindeID, id))
       .execute();
+
     await db
       .insert(Workflows)
       .values({
         WorkflowName: newWorkflow,
         Nodes: existingWorkflow[0].Nodes,
         Edges: existingWorkflow[0].Edges,
-        GitHubNode: {
-          id: "github-1",
-          type: "github",
-          data: {
-            repoName: "",
-            listenerType: "issues",
-          },
-          position: { x: 0, y: 0 },
-        },
-        Published: false,
-        HookID: null,
+        GitHubNode: existingWorkflow[0].GitHubNode,
       })
       .execute();
 
     await db.insert(Logs).values({
-      LogMessage: `Workflow ${newWorkflow} Duplicated from ${workflow}`,
+      LogMessage: `Workflow ${newWorkflow} duplicated from ${workflow}`,
       WorkflowName: newWorkflow,
       Success: true,
     });
 
     return NextResponse.json(
-      { message: `Workflow ${newWorkflow} Duplicated from ${workflow}` },
+      { message: `Workflow ${newWorkflow} duplicated from ${workflow}` },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Failed to Duplicate Workflow:", error);
-    await db
-      .insert(Logs)
-      .values({
-        LogMessage: `Failed to duplicate Workflow ${workflow}`,
-        WorkflowName: workflow,
-        Success: false,
-      })
-      .execute();
+    console.error("Failed to duplicate Workflow:", error);
     return NextResponse.json(
       { error: `Failed to duplicate Workflow ${workflow}` },
       { status: 400 }

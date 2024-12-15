@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { db } from "@/db/drizzle";
 import { Logs, Users } from "@/db/schema";
 import {
@@ -14,8 +14,9 @@ import { IconCircleCheck, IconExclamationCircle } from "@tabler/icons-react";
 import { eq, inArray } from "drizzle-orm";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import Header from "@/components/global/header";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function Page() {
+const get = async () => {
   const { getUser } = getKindeServerSession();
   const { id } = await getUser();
 
@@ -39,54 +40,91 @@ export default async function Page() {
           .execute();
       }
     }
-  } catch (error) {}
+    return logs;
+  } catch (error) {
+    return null;
+  }
+};
 
+const Body = async () => {
+  const logs = await get();
+  return (
+    <TableBody>
+      {logs &&
+        logs.reverse().map((log, idx) => {
+          return (
+            <TableRow className="hover:bg-transparent font-medium" key={idx}>
+              <TableCell>{log.createdAt.toTimeString()}</TableCell>
+              <TableCell>{log.WorkflowName}</TableCell>
+              <TableCell>{log.LogMessage}</TableCell>
+              {log.Success ? (
+                <TableCell className="flex justify-end">
+                  <div className="flex flex-row  w-fit h-fit items-center space-x-2 rounded-xl p-1 px-2 ">
+                    <IconCircleCheck className="text-green-500" />
+                    <p>Succeeded</p>
+                  </div>
+                </TableCell>
+              ) : (
+                <TableCell className="flex justify-end">
+                  <div className="flex flex-row  w-fit h-fit items-center space-x-2 rounded-xl p-1 px-2">
+                    <IconExclamationCircle className="text-red-500" />
+                    <p>Failed</p>
+                  </div>
+                </TableCell>
+              )}
+            </TableRow>
+          );
+        })}
+    </TableBody>
+  );
+};
+
+const TablerSkeleton = () => {
   return (
     <div className="w-full flex flex-col">
       <Header route="Logs" />
       <div className="w-full p-[3vh]">
         <Table className="text-base">
-          <TableCaption>Workflow Activity Logs</TableCaption>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="xl:w-[20vw]">Timestamp</TableHead>
               <TableHead className="xl:w-[15vw]">Workflow</TableHead>
               <TableHead>Message</TableHead>
               <TableHead className="text-right">Success</TableHead>
-            </TableRow>
+            </TableRow>{" "}
           </TableHeader>
-          <TableBody>
-            {logs &&
-              logs.reverse().map((log, idx) => {
-                return (
-                  <TableRow
-                    className="hover:bg-transparent font-medium"
-                    key={idx}
-                  >
-                    <TableCell>{log.createdAt.toTimeString()}</TableCell>
-                    <TableCell>{log.WorkflowName}</TableCell>
-                    <TableCell>{log.LogMessage}</TableCell>
-                    {log.Success ? (
-                      <TableCell className="flex justify-end">
-                        <div className="flex flex-row  w-fit h-fit items-center space-x-2 rounded-xl p-1 px-2 ">
-                          <IconCircleCheck className="text-green-500" />
-                          <p>Succeeded</p>
-                        </div>
-                      </TableCell>
-                    ) : (
-                      <TableCell className="flex justify-end">
-                        <div className="flex flex-row  w-fit h-fit items-center space-x-2 rounded-xl p-1 px-2">
-                          <IconExclamationCircle className="text-red-500" />
-                          <p>Failed</p>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
         </Table>
+        <div className="my-2 space-y-2 flex flex-col">
+          <Skeleton className="h-10  w-full rounded-lg" />
+          <Skeleton className="h-10  w-full rounded-lg" />
+          <Skeleton className="h-10  w-full rounded-lg" />
+        </div>
       </div>
     </div>
+  );
+};
+
+
+export default async function Page() {
+  return (
+    <Suspense fallback={<TablerSkeleton />}>
+      <div className="w-full flex flex-col">
+        <Header route="Logs" />
+        <div className="w-full p-[3vh]">
+          <Table className="text-base">
+            <TableCaption>Workflow Activity Logs</TableCaption>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="xl:w-[20vw]">Timestamp</TableHead>
+                <TableHead className="xl:w-[15vw]">Workflow</TableHead>
+                <TableHead>Message</TableHead>
+                <TableHead className="text-right">Success</TableHead>
+              </TableRow>
+            </TableHeader>
+            <Body />
+          </Table>
+        </div>
+      </div>
+    </Suspense>
   );
 }

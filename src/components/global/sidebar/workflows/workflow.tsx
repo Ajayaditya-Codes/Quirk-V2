@@ -15,18 +15,23 @@ import { db } from "@/db/drizzle";
 import { Users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export default async function Workflow() {
+const get = async () => {
   const { getUser } = getKindeServerSession();
   const { id } = await getUser();
-
   let userDetails = null;
   try {
     const result =
       id &&
       (await db.select().from(Users).where(eq(Users.KindeID, id)).execute());
     userDetails = result && result.length > 0 ? result[0] : null;
-  } catch (error) {}
+    return userDetails;
+  } catch (error) {
+    return null;
+  }
+};
 
+export default async function Workflow() {
+  const userDetails = await get();
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Workflows</SidebarGroupLabel>
@@ -42,7 +47,7 @@ export default async function Workflow() {
         ) : (
           <div className="flex flex-col  mb-5 w-full">
             {userDetails?.Workflows.map((workflow) => (
-              <WorkflowMenu workflow={workflow} />
+              <WorkflowMenu workflow={workflow} key={workflow}/>
             ))}
           </div>
         )}

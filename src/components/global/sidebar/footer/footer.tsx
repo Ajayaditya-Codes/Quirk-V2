@@ -3,10 +3,14 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { UserRound } from "lucide-react";
 import Image from "next/image";
 
-export default async function Footer() {
+const get = async () => {
   const { getUser } = getKindeServerSession();
-  const { picture, given_name } = await getUser();
+  const user = await getUser();
+  return user;
+};
 
+export default async function Footer() {
+  const { picture, given_name } = await get();
   return (
     <SidebarFooter className="m-3 shadow-lg bg-white dark:bg-neutral-800 rounded-xl p-3 flex flex-row justify-start items-start">
       {picture ? (

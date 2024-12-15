@@ -5,7 +5,7 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Box, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 export default function WorkflowSkeleton() {
   return (

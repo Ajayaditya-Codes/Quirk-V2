@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { Logs, Users, Workflows } from "@/db/schema";
+import { Users, Workflows } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
@@ -36,7 +36,6 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  // Remove the workflow name from the user's workflows
   const updatedWorkflows = currentWorkflows.filter(
     (name) => name !== workflowName
   );
@@ -59,20 +58,17 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Update the user's workflows
     await db
       .update(Users)
       .set({ Workflows: updatedWorkflows })
       .where(eq(Users.KindeID, id))
       .execute();
 
-    // Delete the workflow from the Workflows table
     await db
       .delete(Workflows)
       .where(eq(Workflows.WorkflowName, workflowName))
       .execute();
 
-    // Log the deletion
   } catch (error) {
     console.error("Failed to delete workflow:", error);
     return NextResponse.json(

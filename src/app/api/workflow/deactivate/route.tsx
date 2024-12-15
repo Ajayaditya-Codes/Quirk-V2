@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { auth } from "@clerk/nextjs/server";
 import { Logs, Workflows } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { getUser } = getKindeServerSession();
+  const {id} = await getUser();
 
-  if (!userId) {
+  if (!id) {
     return NextResponse.json(
       { error: "User not authenticated" },
       { status: 401 }
@@ -24,7 +25,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Check if the workflow exists and is associated with this user
     const existingWorkflow = await db
       .select()
       .from(Workflows)
@@ -38,14 +38,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Update the workflow to set Published = false
     await db
       .update(Workflows)
       .set({ Published: false })
       .where(eq(Workflows.WorkflowName, workflowName))
       .execute();
 
-    // Log the action
     await db.insert(Logs).values({
       LogMessage: `Workflow ${workflowName} deactivated`,
       WorkflowName: workflowName,
@@ -56,7 +54,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Failed to deactivate workflow:", error);
 
-    // Log the failure
     await db.insert(Logs).values({
       LogMessage: `Failed to deactivate Workflow ${workflowName}`,
       WorkflowName: workflowName,

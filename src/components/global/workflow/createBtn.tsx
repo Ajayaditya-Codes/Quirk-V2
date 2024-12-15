@@ -1,8 +1,8 @@
 "use client";
 import * as React from "react";
 import { Plus } from "lucide-react";
-import { generate } from "random-words";
-import { useRouter } from "next/navigation";
+  import { generate } from "random-words";
+  import { useRouter } from "next/navigation";
 
 export default function CreateBtn() {
   const router = useRouter();
@@ -21,15 +21,18 @@ export default function CreateBtn() {
       });
 
       if (response.ok) {
-        console.log("success");
+        console.log("Workflow created successfully: ", workflowName);
         router.refresh();
       } else {
-        console.log("failiure");
+        const errorData = await response.json();
+        console.log(errorData.error);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log("Unexpected error:", error);
+    }
   };
 
-  const join = (strings: string[] | string) => {
+  const join = (strings: String[] | String) => {
     let result = "";
     for (const string of strings) {
       result += string[0].toUpperCase() + string.slice(1);
@@ -37,6 +40,7 @@ export default function CreateBtn() {
     }
     return result.slice(0, -1);
   };
+
   return (
     <span onClick={handler}>
       <Plus size={15} />
